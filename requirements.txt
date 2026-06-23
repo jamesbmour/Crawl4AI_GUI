@@ -1,0 +1,6 @@
+streamlit
+httpx
+beautifulsoup4
+lxml
+markdownify
+crawl4ai
