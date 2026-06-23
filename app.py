@@ -1063,8 +1063,7 @@ def main():
 
     # Crawl button
     if st.button("🚀 Start Crawl", type="primary"):
-        results = run_crawl(url, opts, engine, mode, output_dir)
-        if results:
+        if results := run_crawl(url, opts, engine, mode, output_dir):
             st.session_state.current_result = results
             st.session_state.crawl_results = {"results": results, "url": url, "mode": mode}
 
