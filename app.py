@@ -828,7 +828,8 @@ def render_results(results, output_dir, mode, url):
     with tab1:
         markdown_content = getattr(result, "markdown", "") or getattr(result, "fit_markdown", "") or ""
         if markdown_content:
-            st.markdown(markdown_content)
+            with st.container(height=600):
+                st.markdown(markdown_content)
         else:
             st.warning("No markdown content available")
             if getattr(result, "error_message", None):
@@ -837,7 +838,8 @@ def render_results(results, output_dir, mode, url):
     with tab2:
         html_content = getattr(result, "cleaned_html", "") or getattr(result, "html", "")
         if html_content:
-            st.code(html_content[:50000], language="html")
+            with st.container(height=600):
+                st.code(html_content[:50000], language="html")
         else:
             st.info("No HTML content available")
 
@@ -845,23 +847,24 @@ def render_results(results, output_dir, mode, url):
         media = getattr(result, "media", {}) or {}
         links = getattr(result, "links", {}) or {}
 
-        if media:
-            st.markdown("**Media:**")
-            for media_type, items in media.items():
-                st.markdown(f"- {media_type}: {len(items)} items")
-                for item in items[:5]:
-                    st.markdown(f"  - {item.get('src', item.get('url', ''))[:100]}")
-
-        if links:
-            st.markdown("**Links:**")
-            for link_type, items in links.items():
-                st.markdown(f"- {link_type}: {len(items)} links")
-                for item in items[:10]:
-                    href = item.get("href", "")
-                    text = item.get("text", "")[:50]
-                    st.markdown(f"  - [{text}]({href})")
-
-        if not media and not links:
+        if media or links:
+            with st.container(height=600):
+                if media:
+                    st.markdown("**Media:**")
+                    for media_type, items in media.items():
+                        st.markdown(f"- {media_type}: {len(items)} items")
+                        for item in items[:5]:
+                            st.markdown(f"  - {item.get('src', item.get('url', ''))[:100]}")
+        
+                if links:
+                    st.markdown("**Links:**")
+                    for link_type, items in links.items():
+                        st.markdown(f"- {link_type}: {len(items)} links")
+                        for item in items[:10]:
+                            href = item.get("href", "")
+                            text = item.get("text", "")[:50]
+                            st.markdown(f"  - [{text}]({href})")
+        else:
             st.info("No links or media extracted")
 
     with tab4:
@@ -877,7 +880,9 @@ def render_results(results, output_dir, mode, url):
         metadata = getattr(result, "metadata", {}) or {}
         if isinstance(metadata, dict):
             meta.update(metadata)
-        st.json(meta)
+            
+        with st.container(height=600):
+            st.json(meta)
 
     # Download / Save section
     st.divider()
