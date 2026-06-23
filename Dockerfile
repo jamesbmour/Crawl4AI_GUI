@@ -1,31 +1,44 @@
-# app/Dockerfile
+FROM python:3.10-slim
 
-FROM python:3.13-slim
-
-# Set the working directory to /app
-WORKDIR /app
+# Set up a new user named "user" with user ID 1000 (Required by Hugging Face Spaces)
+RUN useradd -m -u 1000 user
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    git \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Playwright and browser dependencies as root
+RUN pip install playwright && playwright install-deps chromium
+
+# Switch to the "user" user
+USER user
+
+# Set home to the user's home directory
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
+
+# Set the working directory to /app
+WORKDIR $HOME/app
+
 # Copy all application files from the repository
-COPY . .
+COPY --chown=user . $HOME/app
 
 # Install Python dependencies
 RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Set the working directory to /app
-WORKDIR /app
+# Install Playwright browsers (in the user's home directory)
+RUN playwright install chromium
 
-# Expose the Streamlit port
-EXPOSE 8501
+# Run Crawl4AI post-install setup
+RUN crawl4ai-setup
 
-# Configure health check
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+# Expose the Streamlit port used by Hugging Face Spaces (7860)
+EXPOSE 7860
 
-# Run the Streamlit application with the new entry point
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Run the Streamlit application
+CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0"]
