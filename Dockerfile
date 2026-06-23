@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
-    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright and browser dependencies as root
