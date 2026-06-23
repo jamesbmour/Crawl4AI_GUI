@@ -553,7 +553,7 @@ def render_single_page_config(engine):
     col1, col2 = st.columns(2)
 
     with col1:
-        url = st.text_input("🌐 URL to Crawl", placeholder="https://example.com")
+        url = st.text_input("🌐 URL to Crawl", value="https://developer.intacct.com/", placeholder="https://example.com")
 
         markdown_format = st.selectbox(
             "Markdown Format", ["fit_markdown", "raw_markdown"], help="fit_markdown: Smart extraction, removes noise. raw_markdown: Full page content."
@@ -684,11 +684,11 @@ def render_deep_crawl_config(engine):
     col1, col2 = st.columns(2)
 
     with col1:
-        url = st.text_input("🌐 Starting URL", placeholder="https://docs.example.com")
+        url = st.text_input("🌐 Starting URL", value="https://developer.intacct.com/", placeholder="https://docs.example.com")
 
         max_depth = st.number_input("Max Crawl Depth", min_value=1, max_value=10, value=2, help="How deep to follow links from the starting page")
 
-        max_pages = st.number_input("Max Pages", min_value=1, max_value=1000, value=50, help="Maximum number of pages to crawl")
+        max_pages = st.number_input("Max Pages", min_value=1, max_value=1000, value=10, help="Maximum number of pages to crawl")
 
         markdown_format = st.selectbox("Markdown Format", ["fit_markdown", "raw_markdown"], help="fit_markdown: Smart extraction. raw_markdown: Full content.")
 
