@@ -39,6 +39,7 @@ if "crawl_results" not in st.session_state:
 if "current_result" not in st.session_state:
     st.session_state.current_result = None
 
+
 # ---------------------------------------------------------------------------
 # Detect Crawl4AI availability
 # ---------------------------------------------------------------------------
@@ -47,21 +48,22 @@ def check_crawl4ai():
     """Check if Crawl4AI browser mode is available."""
     try:
         from crawl4ai import AsyncWebCrawler, BrowserConfig
+
         # Try to actually launch a browser briefly
         async def _test():
             config = BrowserConfig(headless=True, verbose=False)
             async with AsyncWebCrawler(config=config) as crawler:
                 result = await crawler.arun(
                     url="https://httpbin.org/get",
-                    config=__import__("crawl4ai").CrawlerRunConfig(
-                        word_count_threshold=1, verbose=False
-                    ),
+                    config=__import__("crawl4ai").CrawlerRunConfig(word_count_threshold=1, verbose=False),
                 )
                 return result.success
+
         result = asyncio.run(_test())
         return True, result
     except Exception as e:
         return False, str(e)
+
 
 # Try crawl4ai availability check (but don't block the app)
 try:
@@ -76,6 +78,7 @@ HTTP_FALLBACK_AVAILABLE = True  # httpx + markdownify always available
 # ---------------------------------------------------------------------------
 # Crawl4AI Browser-based crawling
 # ---------------------------------------------------------------------------
+
 
 async def crawl_single_page_c4ai(url, opts):
     """Crawl a single page using Crawl4AI with full configuration."""
@@ -177,8 +180,12 @@ async def crawl_deep_site_c4ai(url, opts, progress_callback=None):
     from crawl4ai.content_filter_strategy import PruningContentFilter, BM25ContentFilter
     from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
     from crawl4ai.deep_crawling.filters import (
-        FilterChain, DomainFilter, ContentTypeFilter,
-        ContentRelevanceFilter, SEOFilter, URLPatternFilter,
+        FilterChain,
+        DomainFilter,
+        ContentTypeFilter,
+        ContentRelevanceFilter,
+        SEOFilter,
+        URLPatternFilter,
     )
 
     # Build browser config
@@ -200,10 +207,12 @@ async def crawl_deep_site_c4ai(url, opts, progress_callback=None):
     if allowed_domains or blocked_domains:
         domains_allowed = [d.strip() for d in allowed_domains.split(",")] if allowed_domains else None
         domains_blocked = [d.strip() for d in blocked_domains.split(",")] if blocked_domains else None
-        filters.append(DomainFilter(
-            allowed_domains=domains_allowed,
-            blocked_domains=domains_blocked,
-        ))
+        filters.append(
+            DomainFilter(
+                allowed_domains=domains_allowed,
+                blocked_domains=domains_blocked,
+            )
+        )
 
     # URL pattern filter
     url_patterns = opts.get("url_patterns")
@@ -282,6 +291,7 @@ async def crawl_deep_site_c4ai(url, opts, progress_callback=None):
 # HTTP Fallback crawling (no browser needed)
 # ---------------------------------------------------------------------------
 
+
 async def crawl_single_page_http(url, opts):
     """Crawl a single page using httpx + markdownify (no browser needed)."""
     async with httpx.AsyncClient(
@@ -301,9 +311,23 @@ async def crawl_single_page_http(url, opts):
     title = title_tag.get_text(strip=True) if title_tag else "Untitled"
 
     # Remove non-content elements
-    for selector in ["nav", "footer", "script", "style", "noscript", "header",
-                      ".navbar", ".site-header", ".site-footer", ".sidebar",
-                      ".breadcrumb", ".search", "iframe", ".ads", ".google-analytics"]:
+    for selector in [
+        "nav",
+        "footer",
+        "script",
+        "style",
+        "noscript",
+        "header",
+        ".navbar",
+        ".site-header",
+        ".site-footer",
+        ".sidebar",
+        ".breadcrumb",
+        ".search",
+        "iframe",
+        ".ads",
+        ".google-analytics",
+    ]:
         for elem in soup.select(selector):
             elem.decompose()
 
@@ -415,6 +439,7 @@ async def crawl_deep_site_http(url, opts, progress_callback=None):
             for u in urls_to_crawl:
                 for pat in patterns:
                     import fnmatch
+
                     if fnmatch.fnmatch(u, pat):
                         filtered.append(u)
                         break
@@ -454,6 +479,7 @@ async def crawl_deep_site_http(url, opts, progress_callback=None):
                             self.screenshot = None
                             self.pdf = None
                             self.metadata = {}
+
                     results.append(ErrorResult(page_url, e))
 
         return results
@@ -462,6 +488,7 @@ async def crawl_deep_site_http(url, opts, progress_callback=None):
 # ---------------------------------------------------------------------------
 # UI Components
 # ---------------------------------------------------------------------------
+
 
 def render_sidebar():
     """Render the sidebar with mode selection and global options."""
@@ -490,21 +517,17 @@ def render_sidebar():
 
         # Crawl mode
         st.markdown("### Crawl Mode")
-        mode = st.radio(
-            "Mode",
-            ["Single Page", "Deep Crawl (Site)"],
-            help="Single Page: crawl one URL. Deep Crawl: recursively crawl an entire site."
-        )
+        mode = st.radio("Mode", ["Single Page", "Deep Crawl (Site)"], help="Single Page: crawl one URL. Deep Crawl: recursively crawl an entire site.")
 
         st.divider()
 
         # Output directory
-        output_dir = st.text_input(
-            "Output Directory",
-            value="/workspace/BSL/crawl4ai-output",
-            help="Where to save markdown files"
-        )
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir = st.text_input("Output Directory", value="", help="Where to save markdown files locally (optional)")
+        if output_dir:
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+            except Exception as e:
+                st.sidebar.error(f"Invalid output directory: {e}")
 
         st.divider()
 
@@ -527,58 +550,27 @@ def render_single_page_config(engine):
         url = st.text_input("🌐 URL to Crawl", placeholder="https://example.com")
 
         markdown_format = st.selectbox(
-            "Markdown Format",
-            ["fit_markdown", "raw_markdown"],
-            help="fit_markdown: Smart extraction, removes noise. raw_markdown: Full page content."
+            "Markdown Format", ["fit_markdown", "raw_markdown"], help="fit_markdown: Smart extraction, removes noise. raw_markdown: Full page content."
         )
 
-        css_selector = st.text_input(
-            "CSS Selector (optional)",
-            placeholder="main, article, .content",
-            help="Extract only this part of the page"
-        )
+        css_selector = st.text_input("CSS Selector (optional)", placeholder="main, article, .content", help="Extract only this part of the page")
 
-        excluded_selector = st.text_input(
-            "Excluded CSS Selector (optional)",
-            placeholder=".sidebar, .ads, nav",
-            help="Remove these elements before conversion"
-        )
+        excluded_selector = st.text_input("Excluded CSS Selector (optional)", placeholder=".sidebar, .ads, nav", help="Remove these elements before conversion")
 
-        excluded_tags = st.text_input(
-            "Excluded HTML Tags (optional)",
-            placeholder="nav, footer, aside",
-            help="Comma-separated tag names to remove"
-        )
+        excluded_tags = st.text_input("Excluded HTML Tags (optional)", placeholder="nav, footer, aside", help="Comma-separated tag names to remove")
 
-        word_count_threshold = st.number_input(
-            "Word Count Threshold", min_value=1, max_value=5000, value=200,
-            help="Minimum words to include a section"
-        )
+        word_count_threshold = st.number_input("Word Count Threshold", min_value=1, max_value=5000, value=200, help="Minimum words to include a section")
 
     with col2:
-        wait_until = st.selectbox(
-            "Wait Until",
-            ["domcontentloaded", "load", "networkidle"],
-            help="When to consider the page loaded"
-        )
+        wait_until = st.selectbox("Wait Until", ["domcontentloaded", "load", "networkidle"], help="When to consider the page loaded")
 
-        page_timeout = st.number_input(
-            "Page Timeout (ms)", min_value=5000, max_value=120000, value=60000, step=5000
-        )
+        page_timeout = st.number_input("Page Timeout (ms)", min_value=5000, max_value=120000, value=60000, step=5000)
 
-        delay_before_return = st.number_input(
-            "Delay Before Return (s)", min_value=0.0, max_value=30.0, value=0.1, step=0.5
-        )
+        delay_before_return = st.number_input("Delay Before Return (s)", min_value=0.0, max_value=30.0, value=0.1, step=0.5)
 
-        cache_mode = st.selectbox(
-            "Cache Mode",
-            ["BYPASS", "ENABLED", "DISABLED", "READ_ONLY", "WRITE_ONLY"]
-        )
+        cache_mode = st.selectbox("Cache Mode", ["BYPASS", "ENABLED", "DISABLED", "READ_ONLY", "WRITE_ONLY"])
 
-        user_agent = st.text_input(
-            "User Agent (optional)",
-            placeholder="Leave empty for default"
-        )
+        user_agent = st.text_input("User Agent (optional)", placeholder="Leave empty for default")
 
     # Advanced options expander
     with st.expander("🔧 Advanced Options"):
@@ -590,10 +582,7 @@ def render_single_page_config(engine):
                 placeholder="// Execute custom JS before scraping",
                 height=100,
             )
-            wait_for = st.text_input(
-                "Wait For Selector (optional)",
-                placeholder=".dynamic-content"
-            )
+            wait_for = st.text_input("Wait For Selector (optional)", placeholder=".dynamic-content")
 
         with adv_col2:
             st.caption("**Content Filtering**")
@@ -609,8 +598,7 @@ def render_single_page_config(engine):
             process_iframes = st.checkbox("Process iFrames", value=False)
             remove_overlay_elements = st.checkbox("Remove Overlays/Popups", value=False)
             simulate_user = st.checkbox("Simulate User Behavior", value=False)
-            magic = st.checkbox("Magic Mode", value=False,
-                                help="Auto-apply anti-bot measures")
+            magic = st.checkbox("Magic Mode", value=False, help="Auto-apply anti-bot measures")
 
     # Fit markdown options
     content_filter_type = None
@@ -625,28 +613,18 @@ def render_single_page_config(engine):
             cf_col1, cf_col2 = st.columns(2)
             with cf_col1:
                 content_filter_type = st.selectbox(
-                    "Content Filter",
-                    ["pruning", "bm25"],
-                    help="Pruning: score-based content filtering. BM25: keyword-relevance filtering."
+                    "Content Filter", ["pruning", "bm25"], help="Pruning: score-based content filtering. BM25: keyword-relevance filtering."
                 )
                 user_query = st.text_input(
-                    "User Query (optional)",
-                    placeholder="What content are you looking for?",
-                    help="Helps the filter prioritize relevant content"
+                    "User Query (optional)", placeholder="What content are you looking for?", help="Helps the filter prioritize relevant content"
                 )
             with cf_col2:
                 if content_filter_type == "pruning":
-                    pruning_threshold = st.slider(
-                        "Pruning Threshold", 0.0, 1.0, 0.48, 0.01,
-                        help="Lower = more content, Higher = more filtered"
-                    )
+                    pruning_threshold = st.slider("Pruning Threshold", 0.0, 1.0, 0.48, 0.01, help="Lower = more content, Higher = more filtered")
                     threshold_type = st.selectbox("Threshold Type", ["fixed", "dynamic", "percentage"])
                     min_word_threshold = st.number_input("Min Words per Section", 0, 500, 0)
                 elif content_filter_type == "bm25":
-                    bm25_threshold = st.slider(
-                        "BM25 Threshold", 0.0, 5.0, 1.0, 0.1,
-                        help="Lower = more content, Higher = more filtered"
-                    )
+                    bm25_threshold = st.slider("BM25 Threshold", 0.0, 5.0, 1.0, 0.1, help="Lower = more content, Higher = more filtered")
 
     # Build options dict
     opts = {
@@ -702,67 +680,35 @@ def render_deep_crawl_config(engine):
     with col1:
         url = st.text_input("🌐 Starting URL", placeholder="https://docs.example.com")
 
-        max_depth = st.number_input(
-            "Max Crawl Depth", min_value=1, max_value=10, value=2,
-            help="How deep to follow links from the starting page"
-        )
+        max_depth = st.number_input("Max Crawl Depth", min_value=1, max_value=10, value=2, help="How deep to follow links from the starting page")
 
-        max_pages = st.number_input(
-            "Max Pages", min_value=1, max_value=1000, value=50,
-            help="Maximum number of pages to crawl"
-        )
+        max_pages = st.number_input("Max Pages", min_value=1, max_value=1000, value=50, help="Maximum number of pages to crawl")
 
-        markdown_format = st.selectbox(
-            "Markdown Format",
-            ["fit_markdown", "raw_markdown"],
-            help="fit_markdown: Smart extraction. raw_markdown: Full content."
-        )
+        markdown_format = st.selectbox("Markdown Format", ["fit_markdown", "raw_markdown"], help="fit_markdown: Smart extraction. raw_markdown: Full content.")
 
     with col2:
-        cache_mode = st.selectbox(
-            "Cache Mode",
-            ["BYPASS", "ENABLED", "DISABLED"]
-        )
+        cache_mode = st.selectbox("Cache Mode", ["BYPASS", "ENABLED", "DISABLED"])
 
-        include_external = st.checkbox(
-            "Include External Links",
-            value=False,
-            help="Follow links to other domains"
-        )
+        include_external = st.checkbox("Include External Links", value=False, help="Follow links to other domains")
 
-        concurrency = st.number_input(
-            "Concurrency", min_value=1, max_value=20, value=5,
-            help="Number of parallel requests (HTTP mode)"
-        )
+        concurrency = st.number_input("Concurrency", min_value=1, max_value=20, value=5, help="Number of parallel requests (HTTP mode)")
 
-        word_count_threshold = st.number_input(
-            "Word Count Threshold", min_value=1, max_value=5000, value=200
-        )
+        word_count_threshold = st.number_input("Word Count Threshold", min_value=1, max_value=5000, value=200)
 
     # Filters
     with st.expander("🔍 URL Filters & Discovery"):
         f_col1, f_col2 = st.columns(2)
 
         with f_col1:
-            allowed_domains = st.text_input(
-                "Allowed Domains (comma-separated)",
-                placeholder="docs.example.com, api.example.com"
-            )
-            blocked_domains = st.text_input(
-                "Blocked Domains (comma-separated)",
-                placeholder="ads.example.com, old.example.com"
-            )
+            allowed_domains = st.text_input("Allowed Domains (comma-separated)", placeholder="docs.example.com, api.example.com")
+            blocked_domains = st.text_input("Blocked Domains (comma-separated)", placeholder="ads.example.com, old.example.com")
 
         with f_col2:
             url_patterns = st.text_input(
-                "URL Patterns (glob, comma-separated)",
-                placeholder="*/docs/*, */api/*",
-                help="Only crawl URLs matching these patterns"
+                "URL Patterns (glob, comma-separated)", placeholder="*/docs/*, */api/*", help="Only crawl URLs matching these patterns"
             )
             content_types = st.text_input(
-                "Allowed Content Types (comma-separated)",
-                placeholder="text/html, application/json",
-                help="Only crawl these content types"
+                "Allowed Content Types (comma-separated)", placeholder="text/html, application/json", help="Only crawl these content types"
             )
 
     # Content options
@@ -862,15 +808,11 @@ def render_results(results, output_dir, mode, url):
     st.markdown("### Page Viewer")
     page_options = []
     for i, r in enumerate(results):
-        title = getattr(r, "title", None) or getattr(r, "url", f"Page {i+1}")
+        title = getattr(r, "title", None) or getattr(r, "url", f"Page {i + 1}")
         status = "✅" if getattr(r, "success", False) else "❌"
-        page_options.append(f"{status} {i+1}. {title[:60]}")
+        page_options.append(f"{status} {i + 1}. {title[:60]}")
 
-    selected_idx = st.selectbox(
-        "Select Page",
-        range(len(page_options)),
-        format_func=lambda x: page_options[x]
-    )
+    selected_idx = st.selectbox("Select Page", range(len(page_options)), format_func=lambda x: page_options[x])
 
     result = results[selected_idx]
 
@@ -951,16 +893,16 @@ def render_results(results, output_dir, mode, url):
 
     with dl_col2:
         # Save all to files
-        if st.button("💾 Save All to Files"):
-            saved = save_results_to_files(results, output_dir, url)
-            st.success(f"Saved {saved} files to `{output_dir}`")
+        if output_dir:
+            if st.button("💾 Save All to Files"):
+                saved = save_results_to_files(results, output_dir, url)
+                st.success(f"Saved {saved} files to `{output_dir}`")
+        else:
+            st.button("💾 Save All to Files", disabled=True, help="Set an output directory in the sidebar to save files locally.")
 
     with dl_col3:
         # Download all as zip
-        all_md = "\n\n---\n\n".join(
-            getattr(r, "markdown", "") or getattr(r, "fit_markdown", "") or ""
-            for r in results if getattr(r, "success", False)
-        )
+        all_md = "\n\n---\n\n".join(getattr(r, "markdown", "") or getattr(r, "fit_markdown", "") or "" for r in results if getattr(r, "success", False))
         if all_md:
             # Create zip in memory
             zip_buffer = io.BytesIO()
@@ -1025,7 +967,7 @@ def save_results_to_files(results, output_dir, base_url):
         f.write(f"Crawled {saved} pages on {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
         for i, r in enumerate(results):
             status = "✅" if getattr(r, "success", False) else "❌"
-            title = getattr(r, "title", getattr(r, "url", f"Page {i+1}"))[:60]
+            title = getattr(r, "title", getattr(r, "url", f"Page {i + 1}"))[:60]
             f.write(f"- {status} [{title}]({url_to_filename(getattr(r, 'url', f'page_{i}'))})\n")
 
     return saved
@@ -1072,13 +1014,15 @@ def run_crawl(url, opts, engine, mode, output_dir):
         elapsed = time.time() - start_time
 
         # Add to history
-        st.session_state.crawl_history.append({
-            "time": datetime.now().strftime("%H:%M:%S"),
-            "mode": mode,
-            "pages": len(results),
-            "url": url,
-            "elapsed": f"{elapsed:.1f}s",
-        })
+        st.session_state.crawl_history.append(
+            {
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "mode": mode,
+                "pages": len(results),
+                "url": url,
+                "elapsed": f"{elapsed:.1f}s",
+            }
+        )
 
         return results
 
@@ -1091,6 +1035,7 @@ def run_crawl(url, opts, engine, mode, output_dir):
 # ---------------------------------------------------------------------------
 # Main app
 # ---------------------------------------------------------------------------
+
 
 def main():
     st.title("🕷️ Crawl4AI Web App")
