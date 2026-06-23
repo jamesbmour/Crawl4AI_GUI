@@ -855,7 +855,7 @@ def render_results(results, output_dir, mode, url):
                         st.markdown(f"- {media_type}: {len(items)} items")
                         for item in items[:5]:
                             st.markdown(f"  - {item.get('src', item.get('url', ''))[:100]}")
-        
+
                 if links:
                     st.markdown("**Links:**")
                     for link_type, items in links.items():
@@ -880,7 +880,7 @@ def render_results(results, output_dir, mode, url):
         metadata = getattr(result, "metadata", {}) or {}
         if isinstance(metadata, dict):
             meta.update(metadata)
-            
+
         with st.container(height=600):
             st.json(meta)
 
