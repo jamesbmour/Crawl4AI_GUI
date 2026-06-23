@@ -87,20 +87,26 @@ async def crawl_single_page_c4ai(url, opts):
     from crawl4ai.content_filter_strategy import PruningContentFilter, BM25ContentFilter
 
     # Build browser config
-    browser_config = BrowserConfig(
-        headless=opts.get("headless", True),
-        browser_type=opts.get("browser_type", "chromium"),
-        verbose=opts.get("verbose", False),
-        java_script_enabled=opts.get("java_script_enabled", True),
-        text_mode=opts.get("text_mode", False),
-        light_mode=opts.get("light_mode", False),
-        ignore_https_errors=opts.get("ignore_https_errors", True),
-        viewport_width=opts.get("viewport_width", 1080),
-        viewport_height=opts.get("viewport_height", 600),
-        user_agent=opts.get("user_agent") or None,
-        proxy=opts.get("proxy") or None,
-        user_agent_mode=opts.get("user_agent_mode") or None,
-    )
+    browser_kwargs = {
+        "headless": opts.get("headless", True),
+        "browser_type": opts.get("browser_type", "chromium"),
+        "verbose": opts.get("verbose", False),
+        "java_script_enabled": opts.get("java_script_enabled", True),
+        "text_mode": opts.get("text_mode", False),
+        "light_mode": opts.get("light_mode", False),
+        "ignore_https_errors": opts.get("ignore_https_errors", True),
+        "viewport_width": opts.get("viewport_width", 1080),
+        "viewport_height": opts.get("viewport_height", 600),
+    }
+
+    if opts.get("user_agent"):
+        browser_kwargs["user_agent"] = opts.get("user_agent")
+    if opts.get("proxy"):
+        browser_kwargs["proxy"] = opts.get("proxy")
+    if opts.get("user_agent_mode"):
+        browser_kwargs["user_agent_mode"] = opts.get("user_agent_mode")
+
+    browser_config = BrowserConfig(**browser_kwargs)
 
     # Build content filter for fit_markdown
     content_filter = None
